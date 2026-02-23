@@ -6,6 +6,7 @@ import discord
 import os
 import json
 import traceback
+import asyncio
 from openai import OpenAI
 from dotenv import load_dotenv
 from collections import defaultdict
@@ -26,19 +27,22 @@ MAX_HISTORY = 10
 def load_full_config(): # 名前を load_cyan_config から load_full_config に変更
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
         return json.load(f) # ここも辞書をそのまま返す形に変更
-    return json.dumps(data, ensure_ascii=False, indent=2)
 
 client_ai = OpenAI(
     api_key=OPENROUTER_API_KEY,
     base_url="https://openrouter.ai/api/v1"
 )
 
+# --- エラー防止のため client_discord の定義をイベント定義より前に移動 ---
 intents = discord.Intents.default()
 intents.message_content = True 
+intents.guilds = True  # サーバー情報を取得するために必要
 client_discord = discord.Client(intents=intents)
 
 @client_discord.event
 async def on_ready():
+    # サーバー情報が同期されるまで少し待機
+    await asyncio.sleep(3)
     print(f'Logged in as {client_discord.user} (Name: Cyan)')
     
     try:
@@ -157,6 +161,6 @@ async def on_message(message):
                 
             except Exception as e:
                 print(f"--- ERROR ---\n{traceback.format_exc()}")
-                await message.reply("エラーが出てるみたい！/nあどみんさんに相談してみて！")
+                await message.reply("エラーが出てるみたい！\nあどみんさんに相談してみて！")
 
 client_discord.run(DISCORD_TOKEN)
