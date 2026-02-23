@@ -1,3 +1,6 @@
+# Cyan-kun本体の.pyファイル
+# 手動起動の際はこのファイルを実行、systemdなどで自動起動する際は仮想環境のpythonからこのファイルを指定して起動してください。
+
 import discord
 import os
 import json
