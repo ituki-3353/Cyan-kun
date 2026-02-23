@@ -1,0 +1,29 @@
+# 仮想環境
+.venv/
+venv/
+env/
+
+# Pythonキャッシュ・バイナリ
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE/エディタ
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# ログ・機密ファイル
+*.log
+.env
+config.json  # APIキーなど
