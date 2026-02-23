@@ -90,13 +90,17 @@ async def on_message(message):
     server_id = str(message.guild.id)
     
     # 2. サーバー固有設定の取得
-    server_cfg = full_config.get("server_settings", {}).get(server_id, full_config["server_settings"]["default"])
+    server_settings = full_config.get("server_settings", {})
+    # デフォルト設定がない場合やキーエラーを防ぐために安全に取得
+    server_cfg = server_settings.get(server_id, server_settings.get("default", {}))
     allowed_channels = server_cfg.get("allowed_channels", [])
     keywords = server_cfg.get("keywords", ["シアン"])
 
     # 3. チャンネル制限のチェック
-    if allowed_channels and message.channel.id not in allowed_channels:
-        return
+    # configのIDがintかstrか混在する可能性があるため、両方チェックする
+    if allowed_channels:
+        if message.channel.id not in allowed_channels and str(message.channel.id) not in allowed_channels:
+            return
 
     # 4. キーワード判定
     content = message.content
