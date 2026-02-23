@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -205,3 +206,34 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+=======
+# 仮想環境
+.venv/
+venv/
+env/
+
+# Pythonキャッシュ・バイナリ
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE/エディタ
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# ログ・機密ファイル
+*.log
+.env
+config.json  # APIキーなど
+>>>>>>> 56cd70ab305d72c4067c1d7e504bff87e92e67c7
