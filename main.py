@@ -1,6 +1,7 @@
 # Cyan-kun本体の.pyファイル
 # 手動起動の際はこのファイルを実行、systemdなどで自動起動する際は仮想環境のpythonからこのファイルを指定して起動してください。
 
+import datetime
 import discord
 import os
 import json
@@ -21,9 +22,10 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 message_history = defaultdict(list)
 MAX_HISTORY = 10
 
-def load_cyan_config():
+# --- 24行目付近を修正 ---
+def load_full_config(): # 名前を load_cyan_config から load_full_config に変更
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        return json.load(f) # ここも辞書をそのまま返す形に変更
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 client_ai = OpenAI(
@@ -36,29 +38,101 @@ intents.message_content = True
 client_discord = discord.Client(intents=intents)
 
 @client_discord.event
+async def on_ready():
+    print(f'Logged in as {client_discord.user} (Name: Cyan)')
+    
+    try:
+        full_config = load_full_config()
+        server_settings = full_config.get("server_settings", {})
+        
+        # 統計情報の計算
+        # default設定を除いたサーバー数と、全サーバーの許可チャンネル合計数
+        actual_servers = [s for s in server_settings.keys() if s != "default"]
+        server_count = len(actual_servers)
+        channel_count = sum(len(s.get("allowed_channels", [])) for s in server_settings.values())
+        
+        # 現在のUTC時刻
+        now_utc = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+        for guild in client_discord.guilds:
+            server_cfg = server_settings.get(str(guild.id))
+            if server_cfg and server_cfg.get("log_channel"):
+                log_channel_id = server_cfg.get("log_channel")
+                channel = client_discord.get_channel(log_channel_id)
+                
+                if channel:
+                    # 埋め込みメッセージ（Embed）の作成
+                    embed = discord.Embed(
+                        title="自動送信ログ",
+                        description="Cyan-kunが起動しました。",
+                        color=discord.Color.cyan()
+                    )
+                    embed.add_field(
+                        name="ステータス", 
+                        value="・☑実行中", 
+                        inline=True
+                    )
+                    embed.add_field(
+                        name="ログ時刻", 
+                        value=f"{now_utc} (UTC)", 
+                        inline=True
+                    )
+                    embed.add_field(
+                        name="統計情報",
+                        value=f"フィルターされているサーバー数: {server_count}\n許可されているチャンネル数: {channel_count}",
+                        inline=False
+                    )
+                    
+                    await channel.send(embed=embed)
+                    print(f"Startup log sent to {guild.name}")
+                    
+    except Exception as e:
+        print(f"Startup log error: {traceback.format_exc()}")
+
+@client_discord.event
 async def on_message(message):
-    if message.author.bot:
+    # 自分やBot、DMは無視
+    if message.author.bot or not message.guild:
         return
 
-    content = message.content
-    channel_id = message.channel.id
+    # 1. 設定の動的読み込み
+    full_config = load_full_config()
+    server_id = str(message.guild.id)
+    
+    # 2. サーバー固有設定の取得
+    server_cfg = full_config.get("server_settings", {}).get(server_id, full_config["server_settings"]["default"])
+    allowed_channels = server_cfg.get("allowed_channels", [])
+    keywords = server_cfg.get("keywords", ["シアン"])
 
-    # 「シアン」または「Cyan」が含まれる場合に反応
-    if "シアン" in content or "Cyan" in content:
+    # 3. チャンネル制限のチェック
+    if allowed_channels and message.channel.id not in allowed_channels:
+        return
+
+    # 4. キーワード判定
+    content = message.content
+    if any(k in content for k in keywords):
         async with message.channel.typing():
             try:
-                current_settings = load_cyan_config()
+                # 5. システムプロンプトの構築（AIに渡す情報を整理）
+                # identity, behavior_rules, strict_observance, few_shot_examples を抽出
+                ai_core_settings = {
+                    "identity": full_config.get("bot_identity"),
+                    "behavior": full_config.get("behavior_rules"),
+                    "strict_rules": full_config.get("strict_observance"),
+                    "examples": full_config.get("few_shot_examples"),
+                    "prohibited": full_config.get("prohibited_answer_examples")
+                }
                 
-                # システムプロンプトの構築
                 system_message = {
-                    "role": "system",
-                    "content": f"You are a specific AI character based on this JSON:\n{current_settings}"
+                    "role": "system", 
+                    "content": f"You are Cyan. Strictly follow this JSON config:\n{json.dumps(ai_core_settings, ensure_ascii=False)}"
                 }
 
-                # 履歴に今回のユーザー入力を追加
+                # 6. 会話履歴の管理
+                channel_id = message.channel.id
                 message_history[channel_id].append({"role": "user", "content": content})
-
-                # 送信用メッセージリストの作成（System + 履歴）
+                
+                # 送信用メッセージ（システム設定 + 履歴）
                 messages_to_send = [system_message] + message_history[channel_id]
 
                 response = client_ai.chat.completions.create(
