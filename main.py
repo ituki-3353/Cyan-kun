@@ -41,55 +41,41 @@ client_discord = discord.Client(intents=intents)
 
 @client_discord.event
 async def on_ready():
-    # サーバー情報が同期されるまで少し待機
-    await asyncio.sleep(3)
-    print(f'Logged in as {client_discord.user} (Name: Cyan)')
+    print(f'--- 起動処理開始: {client_discord.user} ---')
+    await asyncio.sleep(5) 
     
     try:
         full_config = load_full_config()
         server_settings = full_config.get("server_settings", {})
         
-        # 統計情報の計算
-        # default設定を除いたサーバー数と、全サーバーの許可チャンネル合計数
-        actual_servers = [s for s in server_settings.keys() if s != "default"]
-        server_count = len(actual_servers)
-        channel_count = sum(len(s.get("allowed_channels", [])) for s in server_settings.values())
-        
-        # 現在のUTC時刻
-        now_utc = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        target_guild_id = 1326883091662508043
+        # get_guildで見つからない場合はfetchを試みる
+        guild = client_discord.get_guild(target_guild_id)
+        if not guild:
+            try:
+                guild = await client_discord.fetch_guild(target_guild_id)
+            except:
+                pass
 
-        for guild in client_discord.guilds:
+        if guild:
+            # config内のキーは文字列であることが多いため str() でラップ
             server_cfg = server_settings.get(str(guild.id))
-            if server_cfg and server_cfg.get("log_channel"):
+            if server_cfg:
                 log_channel_id = server_cfg.get("log_channel")
-                channel = client_discord.get_channel(log_channel_id)
+                # チャンネルも同様に fetch を試みる
+                channel = client_discord.get_channel(int(log_channel_id))
                 
                 if channel:
-                    # 埋め込みメッセージ（Embed）の作成
-                    embed = discord.Embed(
-                        title="自動送信ログ",
-                        description="Cyan-kunが起動しました。",
-                        color=discord.Color.cyan()
-                    )
-                    embed.add_field(
-                        name="ステータス", 
-                        value="・☑実行中", 
-                        inline=True
-                    )
-                    embed.add_field(
-                        name="ログ時刻", 
-                        value=f"{now_utc} (UTC)", 
-                        inline=True
-                    )
-                    embed.add_field(
-                        name="統計情報",
-                        value=f"フィルターされているサーバー数: {server_count}\n許可されているチャンネル数: {channel_count}",
-                        inline=False
-                    )
-                    
+                    # （中略：Embed作成処理）
                     await channel.send(embed=embed)
-                    print(f"Startup log sent to {guild.name}")
-                    
+                    print(f"Successfully sent log to {channel.name}")
+                else:
+                    print(f"Error: チャンネルID {log_channel_id} が見つかりません。権限を確認してください。")
+            else:
+                print(f"Error: config.json内にサーバー {target_guild_id} の設定がありません。")
+        else:
+            print(f"Error: サーバー {target_guild_id} にアクセスできません。")
+            
     except Exception as e:
         print(f"Startup log error: {traceback.format_exc()}")
 
@@ -124,7 +110,7 @@ async def on_message(message):
                     "behavior": full_config.get("behavior_rules"),
                     "strict_rules": full_config.get("strict_observance"),
                     "examples": full_config.get("few_shot_examples"),
-                    "prohibited": full_config.get("prohibited_answer_examples")
+                    "prohibited": full_config.get("Examples of prohibited answers")
                 }
                 
                 system_message = {

@@ -7,14 +7,14 @@
 
     "server_settings": {
     "1326883091662508043": {
-      "allowed_channels": [1326883209044299879],
+      "allowed_channels": ["1326883209044299879"],
       "keywords": ["シアン", "Cyan", "しあん"],
-      "log_channel": 1326883209044299879
+      "log_channel": "1475587338955391017"
     },
     "1441842305031209022": {
-      "allowed_channels": [1475587338955391017],
+      "allowed_channels": ["1475587338955391017"],
       "keywords": ["シアン", "Cyan", "しあん"],
-      "log_channel": 1475587338955391017
+      "log_channel": "1475587338955391017"
     },
     "default": {
       "allowed_channels": [],
