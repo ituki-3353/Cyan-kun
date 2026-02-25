@@ -66,21 +66,22 @@ async def on_ready():
                 channel = client_discord.get_channel(int(log_channel_id))
                 
                 if channel:
+                    now_utc = datetime.datetime.now(datetime.timezone.utc)
                     embed = discord.Embed(
-                        title="🟢 起動ログ",
-                        description=f"{client_discord.user.name} が起動しました。",
+                        title="🟢 Information logs",
+                        description=f"再起動しました。\nsystem has restarted.\n\nシステム起動日時：UTC: {now_utc.strftime('%Y-%m-%d %H:%M:%S')}",
                         color=discord.Color.green(),
-                        timestamp=datetime.datetime.now(datetime.timezone.utc)
+                        timestamp=now_utc
                     )
                     embed.set_footer(text="Cyan-kun")
                     await channel.send(embed=embed)
-                    print(f"Successfully sent log to {channel.name}")
+                    print(f"Successfully sent log to {channel.name}.\n発生日時：UTC: {now_utc.strftime('%Y-%m-%d %H:%M:%S')}")
                 else:
-                    print(f"Error: {log_channel_id} に送信できないよ～")
+                    print(f"Error: {log_channel_id} has not been found in guild {guild.name} (ID: {guild.id})\n発生日時：UTC: {now_utc.strftime('%Y-%m-%d %H:%M:%S')}")
             else:
-                print(f"Error: こんふぃぐの中に {target_guild_id} の設定が見つからないよ～")
+                print(f"Error: {target_guild_id} has not sconfig for config.json.\n発生日時：UTC: {now_utc.strftime('%Y-%m-%d %H:%M:%S')}")
         else:
-            print(f"Error: サーバーID {target_guild_id} が見つからないよ～")
+            print(f"Error:{target_guild_id} Has not found.\n発生日時：UTC: {now_utc.strftime('%Y-%m-%d %H:%M:%S')}")
             
     except Exception as e:
         print(f"Startup log error: {traceback.format_exc()}")
