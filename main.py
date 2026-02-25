@@ -66,15 +66,21 @@ async def on_ready():
                 channel = client_discord.get_channel(int(log_channel_id))
                 
                 if channel:
-                    # （中略：Embed作成処理）
+                    embed = discord.Embed(
+                        title="🟢 起動ログ",
+                        description=f"{client_discord.user.name} が起動しました。",
+                        color=discord.Color.green(),
+                        timestamp=datetime.datetime.now(datetime.timezone.utc)
+                    )
+                    embed.set_footer(text="Cyan-kun")
                     await channel.send(embed=embed)
                     print(f"Successfully sent log to {channel.name}")
                 else:
-                    print(f"Error: チャンネルID {log_channel_id} が見つかりません。権限を確認してください。")
+                    print(f"Error: {log_channel_id} に送信できないよ～")
             else:
-                print(f"Error: config.json内にサーバー {target_guild_id} の設定がありません。")
+                print(f"Error: こんふぃぐの中に {target_guild_id} の設定が見つからないよ～")
         else:
-            print(f"Error: サーバー {target_guild_id} にアクセスできません。")
+            print(f"Error: サーバーID {target_guild_id} が見つからないよ～")
             
     except Exception as e:
         print(f"Startup log error: {traceback.format_exc()}")
@@ -101,6 +107,12 @@ async def on_message(message):
     if allowed_channels:
         if message.channel.id not in allowed_channels and str(message.channel.id) not in allowed_channels:
             return
+
+    # 履歴リセット機能
+    if message.content.strip() == "?reset-log":
+        message_history[message.channel.id].clear()
+        await message.reply("会話履歴をリセットしたよ！")
+        return
 
     # 4. キーワード判定
     content = message.content
